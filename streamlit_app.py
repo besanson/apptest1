@@ -1,123 +1,117 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
+import numpy as np
+from faker import Faker
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
-from faker import Faker
-import random
+from geopy.distance import geodesic
 
-st.set_page_config(layout="wide")
-st.title("📍 AI-Powered Store Location Optimization Demo")
+# App Configuration
+st.set_page_config(layout="wide", page_title="Poesia AI Location Advisor")
+st.title("🍽️ Poesia AI-Powered Location Advisor")
+st.markdown("##### Optimizing New Store Locations in Barcelona")
 
-# Initialize Faker
 fake = Faker()
 
-# Generate synthetic data (this would typically be loaded externally)
+# Generate synthetic data for Barcelona
 @st.cache_data
-def generate_synthetic_data(num_locations=100):
+def generate_data(n=100):
     data = []
-    for i in range(num_locations):
+    for i in range(n := num_locations := n):
         data.append({
             'location_id': f"LOC_{i+1}",
-            'latitude': np.random.uniform(25.75, 25.85),
-            'longitude': np.random.uniform(-80.25, -80.15),
-            'avg_income': np.random.normal(50000, 15000),
-            'foot_traffic': np.random.randint(500, 5000),
-            'competitor_density': np.random.randint(0, 15),
+            'latitude': np.random.uniform(41.36, 41.42),
+            'longitude': np.random.uniform(2.14, 2.19),
+            'avg_income': np.random.normal(35000, 12000),
+            'foot_traffic': np.random.randint(1000, 5000),
+            'competitor_density': np.random.randint(0, 10),
             'rent_price': np.random.uniform(20, 80),
-            'sentiment_score': round(np.random.uniform(0.4, 0.9), 2),
-            'demographic_match': round(np.random.uniform(5, 10), 1)
+            'demographic_match': np.round(np.random.uniform(6,10),1),
+            'sentiment_score': np.round(np.random.uniform(0.5,0.9),2)
         })
-    df = pd.DataFrame(data)
+    return pd.DataFrame(data)
 
-    # GPT-like synthetic reviews
-    reviews = [
-        "Convenient location, perfect for quick visits during work breaks.",
-        "Crowded but vibrant area, coffee quality makes it worth it.",
-        "Great coffee but parking can be difficult.",
-        "Ideal location near offices, slightly expensive but worth it.",
-        "Average experience due to heavy competition nearby."
-    ]
-    df['synthetic_review'] = [random.choice(reviews) for _ in range(num_locations)]
+data = generate_data()
 
-    # Monthly sales calculation
-    df['monthly_sales'] = (
-        df['foot_traffic'] * np.random.uniform(5,15) +
-        df['demographic_match'] * 1000 -
-        df['competitor_density'] * 800 +
-        df['sentiment_score'] * 2000 -
-        df['rent_price'] * 500 +
-        np.random.normal(0, 1000, num_locations)
-    ).astype(int)
-
-    return df
-
-data = generate_synthetic_data()
-
-# Train predictive model
-@st.cache_resource
+# Model Training
+@st.cache_resource(show_spinner="Training AI Model...")
 def train_model(df):
-    features = ['avg_income', 'foot_traffic', 'competitor_density', 
-                'rent_price', 'sentiment_score', 'demographic_match']
-    X = df[features]
-    y = df['monthly_sales']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = xgb.XGBRegressor(n_estimators=200, max_depth=4, random_state=42)
+    X = df[['demographic_match', 'foot_traffic', 'competitor_density', 'rent_price', 'sentiment_score']]
+    y = (df['foot_traffic'] * 10 + df['demographic_match']*1000 -
+         df['competitor_density']*1200 + df['sentiment_score']*1000 - df['rent_price']*300).astype(int)
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = xgb.XGBRegressor(n_estimators=30, max_depth=3, random_state=42)
     model.fit(X_train, y_train)
     return model
 
-model = train_model(data)
+model = train_ai_model(data)
 
-# Sidebar inputs for demo interaction
-st.sidebar.header("🔍 Search Criteria")
-center_lat = st.sidebar.number_input("Center Latitude", value=25.80, format="%.5f")
-center_lon = st.sidebar.number_input("Center Longitude", value=-80.20, format="%.5f")
-radius_km = st.sidebar.slider("Search Radius (km)", min_value=0.5, max_value=5.0, value=2.0, step=0.1)
+# Sidebar for CEO interaction
+with st.sidebar:
+    st.image("https://static.wixstatic.com/media/0321ec_ee3b53f39a3f44c9a6fdbd53c903afc5~mv2.png", width=150)
+    st.markdown("### 🔎 Store Preferences")
+    radius = st.slider("Search Radius (km)", 0.5, 5.0, 2.0, step=0.1)
+    store_type = st.selectbox("Store Type", ["Flagship", "Normal", "Corner"])
+    goal = st.radio("Primary Objective", ["Revenue 📈", "Brand Awareness 💡", "Foot Traffic 🚶"])
 
-# Function to calculate distance
-from geopy.distance import geodesic
+# Poesia location
+poesia_coords = (41.400893, 2.152517)  # Gran de Gràcia, 164, Barcelona
 
-def within_radius(row, center, radius):
-    loc = (row['latitude'], row['longitude'])
-    distance = geodesic(center, loc).km
-    return distance <= radius
+# Calculate distances and filter locations
+data['distance_km'] = data.apply(lambda row: geodesic(poesia_coords, (row['latitude'], row['longitude'])).km, axis=1)
+filtered = data[data['distance_km'] <= radius].copy()
 
-center_point = (center_lat, center_lon)
-filtered_data = data[data.apply(within_radius, axis=1, center=center_point, radius=radius_km)]
+# Predict sales
+features = ['demographic_match', 'foot_traffic', 'competitor_density', 'rent_price', 'sentiment_score']
+filtered_X = data[features := features]
+model_predictions = model.predict(filtered_X := filtered_X := data[features]).astype(int)
+filtered_data = data.assign(predicted_sales=model_predictions)
 
-# Predict sales for filtered locations
-filtered_data['predicted_sales'] = model.predict(filtered_data[['avg_income', 'foot_traffic', 'competitor_density', 
-                                                                'rent_price', 'sentiment_score', 'demographic_match']]).astype(int)
+# User selects primary target
+primary_target = st.sidebar.selectbox("Primary Target 🎯", ["Revenue", "Brand Awareness", "Foot Traffic"])
 
-# Rank recommendations
-recommendations = filtered_data.sort_values(by='predicted_sales', ascending=False).head(5)
+# Score calculation based on user choice
+weights = {
+    'Revenue': {'sales':0.6, 'demographic_match':0.2, 'foot_traffic':0.2},
+    'Brand Awareness': {'sales':0.2,'foot_traffic':0.3,'sentiment_score':0.5},
+    'Foot Traffic': {'sales':0.2, 'foot_traffic':0.6, 'brand_awareness':0.2}
+}
 
-# Display interactive map
-st.subheader("🗺️ Location Map")
-st.map(filtered_data[['latitude', 'longitude']])
+w = weights.get(primary_target, {'sales':0.5,'foot_traffic':0.3,'brand_awareness':0.2})
 
-# Display top recommendations
-st.subheader("🏅 Top Recommended Locations")
-st.dataframe(recommendations[['location_id', 'predicted_sales', 'foot_traffic', 
-                              'competitor_density', 'demographic_match', 'synthetic_review']], 
-             use_container_width=True)
+filtered_data['score'] = (
+    filtered_data['predicted_sales'] * w.get('sales',0.5) +
+    filtered_data['foot_traffic'] * w.get('foot_traffic',0.3) * 2 +
+    filtered_data['demographic_match'] * 500
+)
 
-# Display detailed GPT-like explanations
-st.subheader("💬 GPT-generated Recommendation Explanations")
-for idx, row in recommendations.iterrows():
-    with st.expander(f"📌 {row['location_id']} - Sales Prediction: ${row['predicted_sales']}"):
-        explanation = f"""
-        **Why this location?**
+top_recommendations = filtered_data.sort_values(by='score', ascending=False).head(5)
 
-        - **High Predicted Monthly Sales:** ${row['predicted_sales']}
-        - **Foot Traffic:** {row['foot_traffic']} visitors/week.
-        - **Competitor Density:** {row['competitor_density']} nearby.
-        - **Demographic Match:** {row['demographic_match']}/10.
-        
-        **Consumer Feedback:**
-        _"{row['synthetic_review']}"_
+# UI - Map visualization
+st.subheader(f"📍 Top Recommendations Near Poesia (Radius: {radius} km)")
+st.map(top_recommendations[['latitude', 'longitude']])
 
-        This combination strongly suggests high market potential and profitability.
-        """
-        st.markdown(explanation)
+# Display top recommendations clearly
+for _, row in top_recommendations.iterrows():
+    with st.expander(f"Location {row['location_id']} — Predicted Sales: €{row['predicted_sales']}"):
+        st.write(f"""
+        **Metrics:**
+        - 📈 **Monthly Sales Prediction:** €{row['predicted_sales']}
+        - 🚶 **Foot Traffic:** {row['foot_traffic']}/week
+        - ⚔️ **Competitor Density:** {row['competitor_density']}
+        - 💼 **Demographic Match:** {row['demographic_match']}/10
+        - 📊 **Rent Price:** €{row['rent_price']:.2f}/m²
+        """)
 
+# Simple Chatbot Interaction
+st.markdown("## 💬 Ask AI Assistant")
+user_question = st.text_input("Your question:", "Why is this location recommended?")
+
+if user_input:
+    st.markdown(f"""
+    **AI Advisor says:**  
+    "Based on your goal of **{primary_target}**, the top recommended locations within **{radius} km** of Poesia (Gran de Gràcia, 164) have been selected to maximize your desired outcome, factoring in key indicators like foot traffic, revenue potential, and brand alignment."
+    """)
+
+st.markdown("---")
+st.caption("📌 **Poesia AI Advisor** powered by  Gaston AI © 2025")
