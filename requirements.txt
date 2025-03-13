@@ -1,6 +1,6 @@
 streamlit
-numpy
 pandas
+numpy
 xgboost
 scikit-learn
 faker
