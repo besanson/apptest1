@@ -62,11 +62,20 @@ poesia_coords = (41.400893, 2.152517)  # Gran de Gràcia, 164, Barcelona
 data['distance_km'] = data.apply(lambda row: geodesic(poesia_coords, (row['latitude'], row['longitude'])).km, axis=1)
 filtered = data[data['distance_km'] <= radius].copy()
 
-# Predict sales
+
+
+# Define features clearly
 features = ['demographic_match', 'foot_traffic', 'competitor_density', 'rent_price', 'sentiment_score']
-filtered_X = data[features := features]
-model_predictions = model.predict(filtered_X := filtered_X := data[features]).astype(int)
+
+# Prepare filtered features
+filtered_X = data[features]
+
+# Predict clearly and correctly
+model_predictions = model.predict(filtered_X).astype(int)
+
+# Assign predictions clearly back to your DataFrame
 filtered_data = data.assign(predicted_sales=model_predictions)
+
 
 # User selects primary target
 primary_target = st.sidebar.selectbox("Primary Target 🎯", ["Revenue", "Brand Awareness", "Foot Traffic"])
