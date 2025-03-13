@@ -114,19 +114,19 @@ for _, row in top_recommendations.iterrows():
         - 📊 **Rent Price:** €{row['rent_price']:.2f}/m²
         """)
 
-# Simple Chatbot Interaction
 st.markdown("## 💬 Ask AI Assistant")
-user_question = st.text_input("Your question:", "Why is this location recommended?")
-
-# Corrected chatbot interaction block
-st.markdown("## 💬 Ask AI Assistant")
-user_question = st.text_input("Your question:", "Why is this location recommended?")
+user_question = st.text_input(
+    "Your question:", 
+    value="Why is this location recommended?",
+    key="user_question_input"
+)
 
 if user_question:
     st.markdown(f"""
     **AI Advisor says:**  
     "Based on your goal of **{primary_target}**, the top recommended locations within **{radius} km** of Poesia (Gran de Gràcia, 164) have been selected to maximize your desired outcome, factoring in key indicators like foot traffic, revenue potential, and brand alignment."
     """)
+
 
 
 st.markdown("---")
