@@ -45,7 +45,8 @@ def train_model(df):
     model.fit(X_train, y_train)
     return model
 
-model = train_ai_model(data)
+
+model = train_model(data)
 
 # Sidebar for CEO interaction
 with st.sidebar:
