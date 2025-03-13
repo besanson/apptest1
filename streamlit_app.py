@@ -15,21 +15,22 @@ fake = Faker()
 
 # Generate synthetic data for Barcelona
 @st.cache_data
-def generate_data(n=100):
+def generate_data(num_locations=100):
     data = []
-    for i in range(n := num_locations := n):
+    for i in range(num_locations):
         data.append({
             'location_id': f"LOC_{i+1}",
             'latitude': np.random.uniform(41.36, 41.42),
             'longitude': np.random.uniform(2.14, 2.19),
-            'avg_income': np.random.normal(35000, 12000),
-            'foot_traffic': np.random.randint(1000, 5000),
+            'avg_income': np.random.normal(40000, 10000),
+            'foot_traffic': np.random.randint(500, 5000),
             'competitor_density': np.random.randint(0, 10),
-            'rent_price': np.random.uniform(20, 80),
-            'demographic_match': np.round(np.random.uniform(6,10),1),
-            'sentiment_score': np.round(np.random.uniform(0.5,0.9),2)
+            'rent_price': np.random.uniform(30, 100),
+            'demographic_match': round(np.random.uniform(6,10),1),
+            'sentiment_score': round(np.random.uniform(0.5,0.9),2)
         })
     return pd.DataFrame(data)
+
 
 data = generate_data()
 
