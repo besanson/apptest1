@@ -118,11 +118,16 @@ for _, row in top_recommendations.iterrows():
 st.markdown("## 💬 Ask AI Assistant")
 user_question = st.text_input("Your question:", "Why is this location recommended?")
 
-if user_input:
+# Corrected chatbot interaction block
+st.markdown("## 💬 Ask AI Assistant")
+user_question = st.text_input("Your question:", "Why is this location recommended?")
+
+if user_question:
     st.markdown(f"""
     **AI Advisor says:**  
     "Based on your goal of **{primary_target}**, the top recommended locations within **{radius} km** of Poesia (Gran de Gràcia, 164) have been selected to maximize your desired outcome, factoring in key indicators like foot traffic, revenue potential, and brand alignment."
     """)
+
 
 st.markdown("---")
 st.caption("📌 **Poesia AI Advisor** powered by  Gaston AI © 2025")
